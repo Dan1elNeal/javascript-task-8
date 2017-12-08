@@ -17,6 +17,8 @@ function execute() {
     if (command === 'send') {
         return postMessage(argv.from, argv.to, argv.text);
     }
+
+    return Promise.reject('unknown command');
 }
 
 function getMessages(from, to) {
