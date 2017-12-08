@@ -92,21 +92,13 @@ function handlePatch(req, res) {
             body = body.toString('utf-8');
             const { text } = JSON.parse(body);
 
-            let isFinded = false;
             for (let message of MESSAGES) {
                 if (message.id === id) {
                     message.text = text;
                     message.edited = true;
-                    isFinded = true;
                     res.end(JSON.stringify(message));
                     break;
                 }
-            }
-
-            if (!isFinded) {
-                let message = { text, id, edited: true };
-                MESSAGES.push(message);
-                res.end(JSON.stringify(message));
             }
         });
 }

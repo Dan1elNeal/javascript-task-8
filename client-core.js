@@ -72,14 +72,11 @@ function deleteMessage(args) {
     };
 
     return new Promise((resolve, reject) => {
-        request(options, (error, response, body) => {
+        request(options, (error) => {
             if (error) {
                 reject(error);
             }
-            if (body.status === 'ok') {
-                resolve('DELETED');
-            }
-            reject('Not deleted');
+            resolve('DELETED');
         });
     });
 }
