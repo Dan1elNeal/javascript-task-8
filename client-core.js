@@ -97,7 +97,10 @@ function editMessage(args) {
             if (error) {
                 reject(error);
             }
-            resolve(getBeautifulMessage(body, args.v));
+            if (body !== undefined) {
+                resolve(getBeautifulMessage(body, args.v));
+            }
+            reject('Not edited');
         });
     });
 }
