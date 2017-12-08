@@ -1,34 +1,38 @@
 'use strict';
 
 module.exports.execute = execute;
-module.exports.isStar = false;
+module.exports.isStar = true;
 
 const parseArgs = require('minimist');
 const request = require('request');
 const chalk = require('chalk');
 
+const COMMANDS = {
+    'list': getMessages,
+    'send': postMessage,
+    'delete': deleteMessage,
+    'edit': editMessage
+};
+
+const serverUrl = 'http://localhost:8080/messages';
+
 function execute() {
-    let argv = parseArgs(process.argv.slice(2));
-    let command = argv._[0];
+    let args = parseArgs(process.argv.slice(2));
+    let command = args._[0];
 
-    if (command === 'list') {
-        return getMessages(argv.from, argv.to);
-    }
-    if (command === 'send') {
-        return postMessage(argv.from, argv.to, argv.text);
+    if (COMMANDS[command] === undefined) {
+        return Promise.reject('unknown command');
     }
 
-    return Promise.reject('unknown command');
+    return COMMANDS[command](args);
 }
 
-function getMessages(from, to) {
+function getMessages(args) {
     const options = {
-        url: 'http://localhost:8080/messages',
+        url: serverUrl,
         method: 'GET',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        qs: { from, to }
+        json: true,
+        qs: { from: args.from, to: args.to }
     };
 
     return new Promise((resolve, reject) => {
@@ -36,18 +40,18 @@ function getMessages(from, to) {
             if (error) {
                 reject(error);
             }
-            resolve(getBeautifulMessages(JSON.parse(body)));
+            resolve(getBeautifulMessages(body, args.v));
         });
     });
 }
 
-function postMessage(from, to, text) {
+function postMessage(args) {
     const options = {
-        url: 'http://localhost:8080/messages',
+        url: serverUrl,
         method: 'POST',
         json: true,
-        body: { text },
-        qs: { from, to }
+        body: { text: args.text },
+        qs: { from: args.from, to: args.to }
     };
 
     return new Promise((resolve, reject) => {
@@ -55,31 +59,71 @@ function postMessage(from, to, text) {
             if (error) {
                 reject(error);
             }
-            resolve(getBeautifulMessage(body));
+            resolve(getBeautifulMessage(body, args.v));
         });
     });
 }
 
-function getBeautifulMessages(messages) {
-    let beautifulMessages = [];
-    messages.forEach(message => {
-        let beautifulMessage = getBeautifulMessage(message);
-        beautifulMessages.push(beautifulMessage);
-    });
+function deleteMessage(args) {
+    const options = {
+        url: `${serverUrl}/${args.id}`,
+        method: 'DELETE',
+        json: true
+    };
 
-    return beautifulMessages.join('\n\n');
+    return new Promise((resolve, reject) => {
+        request(options, (error, response, body) => {
+            if (error) {
+                reject(error);
+            }
+            if (body.status === 'ok') {
+                resolve('DELETED');
+            }
+            reject('Not deleted');
+        });
+    });
 }
 
-function getBeautifulMessage(message) {
+function editMessage(args) {
+    const options = {
+        url: `${serverUrl}/${args.id}`,
+        method: 'PATCH',
+        json: true,
+        body: { text: args.text }
+    };
+
+    return new Promise((resolve, reject) => {
+        request(options, (error, response, body) => {
+            if (error) {
+                reject(error);
+            }
+            resolve(getBeautifulMessage(body, args.v));
+        });
+    });
+}
+
+function getBeautifulMessages(messages, isDetailed) {
+    return messages.map(message => getBeautifulMessage(message, isDetailed)).join('\n\n');
+}
+
+function getBeautifulMessage(message, isDetailed) {
     let beautifulMessage = '';
 
+    if (isDetailed) {
+        beautifulMessage += `${chalk.hex('#ff0')('ID')}: ${message.id}\n`;
+    }
     if (message.from !== undefined) {
         beautifulMessage += `${chalk.hex('#f00')('FROM')}: ${message.from}\n`;
     }
     if (message.to !== undefined) {
         beautifulMessage += `${chalk.hex('#f00')('TO')}: ${message.to}\n`;
     }
-    beautifulMessage += `${chalk.hex('#0f0')('TEXT')}: ${message.text}`;
+    if (message.edited) {
+        beautifulMessage +=
+            `${chalk.hex('#0f0')('TEXT')}: ${message.text}${chalk.hex('#777')('(edited)')}`;
+    } else {
+        beautifulMessage += `${chalk.hex('#0f0')('TEXT')}: ${message.text}`;
+    }
 
     return beautifulMessage;
 }
