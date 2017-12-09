@@ -9,9 +9,7 @@ const chalk = require('chalk');
 
 const COMMANDS = {
     'list': getMessages,
-    'send': postMessage,
-    'delete': deleteMessage,
-    'edit': editMessage
+    'send': postMessage
 };
 
 const serverUrl = 'http://localhost:8080/messages';
@@ -40,7 +38,7 @@ function getMessages(args) {
             if (error) {
                 reject(error);
             }
-            resolve(getBeautifulMessages(body, args.v));
+            resolve(getBeautifulMessages(body));
         });
     });
 }
@@ -59,68 +57,25 @@ function postMessage(args) {
             if (error) {
                 reject(error);
             }
-            resolve(getBeautifulMessage(body, args.v));
+            resolve(getBeautifulMessage(body));
         });
     });
 }
 
-function deleteMessage(args) {
-    const options = {
-        url: `${serverUrl}/${args.id}`,
-        method: 'DELETE',
-        json: true
-    };
-
-    return new Promise((resolve, reject) => {
-        request(options, (error) => {
-            if (error) {
-                reject(error);
-            }
-            resolve('DELETED');
-        });
-    });
+function getBeautifulMessages(messages) {
+    return messages.map(message => getBeautifulMessage(message)).join('\n\n');
 }
 
-function editMessage(args) {
-    const options = {
-        url: `${serverUrl}/${args.id}`,
-        method: 'PATCH',
-        json: true,
-        body: { text: args.text }
-    };
-
-    return new Promise((resolve, reject) => {
-        request(options, (error, response, body) => {
-            if (error) {
-                reject(error);
-            }
-            resolve(getBeautifulMessage(body, args.v));
-        });
-    });
-}
-
-function getBeautifulMessages(messages, isDetailed) {
-    return messages.map(message => getBeautifulMessage(message, isDetailed)).join('\n\n');
-}
-
-function getBeautifulMessage(message, isDetailed) {
+function getBeautifulMessage(message) {
     let beautifulMessage = '';
 
-    if (isDetailed) {
-        beautifulMessage += `${chalk.hex('#ff0')('ID')}: ${message.id}\n`;
-    }
     if (message.from !== undefined) {
         beautifulMessage += `${chalk.hex('#f00')('FROM')}: ${message.from}\n`;
     }
     if (message.to !== undefined) {
         beautifulMessage += `${chalk.hex('#f00')('TO')}: ${message.to}\n`;
     }
-    if (message.edited) {
-        beautifulMessage +=
-            `${chalk.hex('#0f0')('TEXT')}: ${message.text}${chalk.hex('#777')('(edited)')}`;
-    } else {
-        beautifulMessage += `${chalk.hex('#0f0')('TEXT')}: ${message.text}`;
-    }
+    beautifulMessage += `${chalk.hex('#0f0')('TEXT')}: ${message.text}`;
 
     return beautifulMessage;
 }

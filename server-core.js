@@ -3,22 +3,19 @@
 const http = require('http');
 const { parse: parseUrl } = require('url');
 const { parse: parseQuery } = require('querystring');
-const shortid = require('shortid');
 
 let MESSAGES = [];
 
 const METHODS_HANDLERS = {
     'POST': handlePost,
-    'GET': handleGet,
-    'DELETE': handleDelete,
-    'PATCH': handlePatch
+    'GET': handleGet
 };
 
 const server = http.createServer();
 
 server.on('request', (req, res) => {
     const query = parseUrl(req.url);
-    if (!query.pathname.startsWith('/messages') || query.pathname.split('/').length > 3) {
+    if (!query.pathname.startsWith('/messages')) {
         res.statusCode = 404;
         res.end();
 
@@ -43,10 +40,7 @@ function handlePost(req, res) {
             body = body.toString('utf-8');
             const { text } = JSON.parse(body);
 
-            let message = {
-                text,
-                id: shortid.generate()
-            };
+            let message = { text };
             if (from !== undefined) {
                 message.from = from;
             }
@@ -70,41 +64,5 @@ function handleGet(req, res) {
     });
     res.end(JSON.stringify(suitableMessages));
 }
-
-function handleDelete(req, res) {
-    const query = parseUrl(req.url);
-    let id = query.pathname.split('/')[2];
-
-    MESSAGES = MESSAGES.filter(message => message.id !== id);
-
-    let okay = { status: 'ok' };
-    res.end(JSON.stringify(okay));
-}
-
-function handlePatch(req, res) {
-    const query = parseUrl(req.url);
-    let id = query.pathname.split('/')[2];
-
-    let body = [];
-
-    req
-        .on('data', (chunk) => {
-            body.push(chunk);
-        })
-        .on('end', () => {
-            body = body.toString('utf-8');
-            const { text } = JSON.parse(body);
-
-            for (let message of MESSAGES) {
-                if (message.id === id) {
-                    message.text = text;
-                    message.edited = true;
-                    res.end(JSON.stringify(message));
-                    break;
-                }
-            }
-        });
-}
-
 
 module.exports = server;
