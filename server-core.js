@@ -7,6 +7,13 @@ const shortid = require('shortid');
 
 let MESSAGES = [];
 
+const METHODS_HANDLERS = {
+    'POST': handlePost,
+    'GET': handleGet,
+    'DELETE': handleDelete,
+    'PATCH': handlePatch
+};
+
 const server = http.createServer();
 
 server.on('request', (req, res) => {
@@ -17,19 +24,9 @@ server.on('request', (req, res) => {
 
         return;
     }
+
     res.setHeader('Content-Type', 'application/json');
-    if (req.method === 'POST') {
-        handlePost(req, res);
-    }
-    if (req.method === 'GET') {
-        handleGet(req, res);
-    }
-    if (req.method === 'DELETE') {
-        handleDelete(req, res);
-    }
-    if (req.method === 'PATCH') {
-        handlePatch(req, res);
-    }
+    METHODS_HANDLERS[req.method](req, res);
 });
 
 function handlePost(req, res) {
@@ -46,7 +43,10 @@ function handlePost(req, res) {
             body = body.toString('utf-8');
             const { text } = JSON.parse(body);
 
-            let message = { text, id: shortid.generate() };
+            let message = {
+                text,
+                id: shortid.generate()
+            };
             if (from !== undefined) {
                 message.from = from;
             }
@@ -72,9 +72,7 @@ function handleGet(req, res) {
 }
 
 function handleDelete(req, res) {
-    const query = parseUrl(req.url);
-    let id = query.pathname.split('/')[2];
-
+    let id = req.url.split('/').slice(-1)[0].split('?')[0];
     MESSAGES = MESSAGES.filter(message => message.id !== id);
 
     let okay = { status: 'ok' };
@@ -82,8 +80,7 @@ function handleDelete(req, res) {
 }
 
 function handlePatch(req, res) {
-    const query = parseUrl(req.url);
-    let id = query.pathname.split('/')[2];
+    let id = req.url.split('/').slice(-1)[0].split('?')[0];
 
     let body = [];
 

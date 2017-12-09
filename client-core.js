@@ -1,44 +1,38 @@
 'use strict';
 
 module.exports.execute = execute;
-module.exports.isStar = false;
+module.exports.isStar = true;
 
 const parseArgs = require('minimist');
 const request = require('request');
 const chalk = require('chalk');
 
-let isDetailed = true;
+const COMMANDS = {
+    'list': getMessages,
+    'send': postMessage,
+    'delete': deleteMessage,
+    'edit': editMessage
+};
+
 const serverUrl = 'http://localhost:8080/messages';
 
 function execute() {
-    let argv = parseArgs(process.argv.slice(2));
-    let command = argv._[0];
-    isDetailed = argv.v;
+    let args = parseArgs(process.argv.slice(2));
+    let command = args._[0];
 
-    if (command === 'list') {
-        return getMessages(argv.from, argv.to);
-    }
-    if (command === 'send') {
-        return postMessage(argv.from, argv.to, argv.text);
-    }
-    if (command === 'delete') {
-        return deleteMessage(argv.id);
-    }
-    if (command === 'edit') {
-        return editMessage(argv.id, argv.text);
+    if (COMMANDS[command] === undefined) {
+        return Promise.reject('unknown command');
     }
 
-    return Promise.reject('unknown command');
+    return COMMANDS[command](args);
 }
 
-function getMessages(from, to) {
+function getMessages(args) {
     const options = {
         url: serverUrl,
         method: 'GET',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        qs: { from, to }
+        json: true,
+        qs: { from: args.from, to: args.to }
     };
 
     return new Promise((resolve, reject) => {
@@ -46,18 +40,18 @@ function getMessages(from, to) {
             if (error) {
                 reject(error);
             }
-            resolve(getBeautifulMessages(JSON.parse(body)));
+            resolve(getBeautifulMessages(body, args.v));
         });
     });
 }
 
-function postMessage(from, to, text) {
+function postMessage(args) {
     const options = {
         url: serverUrl,
         method: 'POST',
         json: true,
-        body: { text },
-        qs: { from, to }
+        body: { text: args.text },
+        qs: { from: args.from, to: args.to }
     };
 
     return new Promise((resolve, reject) => {
@@ -65,14 +59,14 @@ function postMessage(from, to, text) {
             if (error) {
                 reject(error);
             }
-            resolve(getBeautifulMessage(body));
+            resolve(getBeautifulMessage(body, args.v));
         });
     });
 }
 
-function deleteMessage(id) {
+function deleteMessage(args) {
     const options = {
-        url: `${serverUrl}/${id}`,
+        url: `${serverUrl}/${args.id}`,
         method: 'DELETE',
         json: true
     };
@@ -87,12 +81,12 @@ function deleteMessage(id) {
     });
 }
 
-function editMessage(id, text) {
+function editMessage(args) {
     const options = {
-        url: `${serverUrl}/${id}`,
+        url: `${serverUrl}/${args.id}`,
         method: 'PATCH',
         json: true,
-        body: { text }
+        body: { text: args.text }
     };
 
     return new Promise((resolve, reject) => {
@@ -100,22 +94,16 @@ function editMessage(id, text) {
             if (error) {
                 reject(error);
             }
-            resolve(getBeautifulMessage(body));
+            resolve(getBeautifulMessage(body, args.v));
         });
     });
 }
 
-function getBeautifulMessages(messages) {
-    let beautifulMessages = [];
-    messages.forEach(message => {
-        let beautifulMessage = getBeautifulMessage(message);
-        beautifulMessages.push(beautifulMessage);
-    });
-
-    return beautifulMessages.join('\n\n');
+function getBeautifulMessages(messages, isDetailed) {
+    return messages.map(message => getBeautifulMessage(message, isDetailed)).join('\n\n');
 }
 
-function getBeautifulMessage(message) {
+function getBeautifulMessage(message, isDetailed) {
     let beautifulMessage = '';
 
     if (isDetailed) {
