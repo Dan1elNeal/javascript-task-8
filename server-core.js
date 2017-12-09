@@ -18,7 +18,8 @@ const server = http.createServer();
 
 server.on('request', (req, res) => {
     const query = parseUrl(req.url);
-    if (query.pathname.split('/')[1] !== 'messages') {
+    let firstPart = query.pathname.split('/')[1];
+    if (firstPart !== 'messages') {
         res.statusCode = 404;
         res.end();
 
@@ -72,7 +73,8 @@ function handleGet(req, res) {
 }
 
 function handleDelete(req, res) {
-    let id = req.url.split('/').slice(-1)[0].split('?')[0];
+    let id = parseId(req);
+
     MESSAGES = MESSAGES.filter(message => message.id !== id);
 
     let okay = { status: 'ok' };
@@ -80,7 +82,7 @@ function handleDelete(req, res) {
 }
 
 function handlePatch(req, res) {
-    let id = req.url.split('/').slice(-1)[0].split('?')[0];
+    let id = parseId(req);
 
     let body = [];
 
@@ -101,6 +103,13 @@ function handlePatch(req, res) {
                 }
             }
         });
+}
+
+function parseId(req) {
+    const query = parseUrl(req.url);
+    let id = query.pathname.split('/').slice(-1)[0];
+
+    return id;
 }
 
 
