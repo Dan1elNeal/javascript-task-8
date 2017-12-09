@@ -7,7 +7,7 @@ const parseArgs = require('minimist');
 const request = require('request');
 const chalk = require('chalk');
 
-let isDetailed = false;
+let isDetailed = true;
 const serverUrl = 'http://localhost:8080/messages';
 
 function execute() {

@@ -11,7 +11,7 @@ const server = http.createServer();
 
 server.on('request', (req, res) => {
     const query = parseUrl(req.url);
-    if (!query.pathname.startsWith('/messages')) {
+    if (query.pathname !== '/messages') {
         res.statusCode = 404;
         res.end();
 
