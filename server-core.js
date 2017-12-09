@@ -72,7 +72,7 @@ function handleGet(req, res) {
 }
 
 function handleDelete(req, res) {
-    let id = req.url.split('/').slice(-1)[0];
+    let id = req.url.split('/').slice(-1)[0].split('?')[0];
     MESSAGES = MESSAGES.filter(message => message.id !== id);
 
     let okay = { status: 'ok' };
@@ -80,7 +80,7 @@ function handleDelete(req, res) {
 }
 
 function handlePatch(req, res) {
-    let id = req.url.split('/').slice(-1)[0];
+    let id = req.url.split('/').slice(-1)[0].split('?')[0];
 
     let body = [];
 
