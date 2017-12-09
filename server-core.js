@@ -17,8 +17,8 @@ const METHODS_HANDLERS = {
 const server = http.createServer();
 
 server.on('request', (req, res) => {
-    const query = parseUrl(req.url);
-    let firstPart = query.pathname.split('/')[1];
+    const { pathname } = parseUrl(req.url);
+    let firstPart = pathname.split('/')[1];
     if (firstPart !== 'messages') {
         res.statusCode = 404;
         res.end();
@@ -106,8 +106,8 @@ function handlePatch(req, res) {
 }
 
 function parseId(req) {
-    const query = parseUrl(req.url);
-    let id = query.pathname.split('/').slice(-1)[0];
+    const { pathname } = parseUrl(req.url);
+    let id = pathname.split('/').slice(-1)[0];
 
     return id;
 }
