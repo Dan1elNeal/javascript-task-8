@@ -7,30 +7,38 @@ const parseArgs = require('minimist');
 const request = require('request');
 const chalk = require('chalk');
 
-const COMMANDS = {
-    'list': getMessages,
-    'send': postMessage
-};
-
+let isDetailed = false;
 const serverUrl = 'http://localhost:8080/messages';
 
 function execute() {
-    let args = parseArgs(process.argv.slice(2));
-    let command = args._[0];
+    let argv = parseArgs(process.argv.slice(2));
+    let command = argv._[0];
+    isDetailed = argv.v;
 
-    if (COMMANDS[command] === undefined) {
-        return Promise.reject('unknown command');
+    if (command === 'list') {
+        return getMessages(argv.from, argv.to);
+    }
+    if (command === 'send') {
+        return postMessage(argv.from, argv.to, argv.text);
+    }
+    if (command === 'delete') {
+        return deleteMessage(argv.id);
+    }
+    if (command === 'edit') {
+        return editMessage(argv.id, argv.text);
     }
 
-    return COMMANDS[command](args);
+    return Promise.reject('unknown command');
 }
 
-function getMessages(args) {
+function getMessages(from, to) {
     const options = {
         url: serverUrl,
         method: 'GET',
-        json: true,
-        qs: { from: args.from, to: args.to }
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        qs: { from, to }
     };
 
     return new Promise((resolve, reject) => {
@@ -38,18 +46,53 @@ function getMessages(args) {
             if (error) {
                 reject(error);
             }
-            resolve(getBeautifulMessages(body));
+            resolve(getBeautifulMessages(JSON.parse(body)));
         });
     });
 }
 
-function postMessage(args) {
+function postMessage(from, to, text) {
     const options = {
         url: serverUrl,
         method: 'POST',
         json: true,
-        body: { text: args.text },
-        qs: { from: args.from, to: args.to }
+        body: { text },
+        qs: { from, to }
+    };
+
+    return new Promise((resolve, reject) => {
+        request(options, (error, response, body) => {
+            if (error) {
+                reject(error);
+            }
+            resolve(getBeautifulMessage(body));
+        });
+    });
+}
+
+function deleteMessage(id) {
+    const options = {
+        url: `${serverUrl}/${id}`,
+        method: 'DELETE',
+        json: true
+    };
+
+    return new Promise((resolve, reject) => {
+        request(options, (error) => {
+            if (error) {
+                reject(error);
+            }
+            resolve('DELETED');
+        });
+    });
+}
+
+function editMessage(id, text) {
+    const options = {
+        url: `${serverUrl}/${id}`,
+        method: 'PATCH',
+        json: true,
+        body: { text }
     };
 
     return new Promise((resolve, reject) => {
@@ -63,19 +106,33 @@ function postMessage(args) {
 }
 
 function getBeautifulMessages(messages) {
-    return messages.map(message => getBeautifulMessage(message)).join('\n\n');
+    let beautifulMessages = [];
+    messages.forEach(message => {
+        let beautifulMessage = getBeautifulMessage(message);
+        beautifulMessages.push(beautifulMessage);
+    });
+
+    return beautifulMessages.join('\n\n');
 }
 
 function getBeautifulMessage(message) {
     let beautifulMessage = '';
 
+    if (isDetailed) {
+        beautifulMessage += `${chalk.hex('#ff0')('ID')}: ${message.id}\n`;
+    }
     if (message.from !== undefined) {
         beautifulMessage += `${chalk.hex('#f00')('FROM')}: ${message.from}\n`;
     }
     if (message.to !== undefined) {
         beautifulMessage += `${chalk.hex('#f00')('TO')}: ${message.to}\n`;
     }
-    beautifulMessage += `${chalk.hex('#0f0')('TEXT')}: ${message.text}`;
+    if (message.edited) {
+        beautifulMessage +=
+            `${chalk.hex('#0f0')('TEXT')}: ${message.text}${chalk.hex('#777')('(edited)')}`;
+    } else {
+        beautifulMessage += `${chalk.hex('#0f0')('TEXT')}: ${message.text}`;
+    }
 
     return beautifulMessage;
 }
