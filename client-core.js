@@ -20,7 +20,7 @@ function execute() {
     let args = parseArgs(process.argv.slice(2));
     let command = args._[0];
 
-    if (COMMANDS[command] === undefined) {
+    if (!COMMANDS[command]) {
         return Promise.reject('unknown command');
     }
 
@@ -35,14 +35,7 @@ function getMessages(args) {
         qs: { from: args.from, to: args.to }
     };
 
-    return new Promise((resolve, reject) => {
-        request(options, (error, response, body) => {
-            if (error) {
-                reject(error);
-            }
-            resolve(getBeautifulMessages(body, args.v));
-        });
-    });
+    return getRequestPromise(options, args, getBeautifulMessages);
 }
 
 function postMessage(args) {
@@ -54,14 +47,7 @@ function postMessage(args) {
         qs: { from: args.from, to: args.to }
     };
 
-    return new Promise((resolve, reject) => {
-        request(options, (error, response, body) => {
-            if (error) {
-                reject(error);
-            }
-            resolve(getBeautifulMessage(body, args.v));
-        });
-    });
+    return getRequestPromise(options, args, getBeautifulMessage);
 }
 
 function deleteMessage(args) {
@@ -71,14 +57,7 @@ function deleteMessage(args) {
         json: true
     };
 
-    return new Promise((resolve, reject) => {
-        request(options, (error) => {
-            if (error) {
-                reject(error);
-            }
-            resolve('DELETED');
-        });
-    });
+    return getRequestPromise(options, args);
 }
 
 function editMessage(args) {
@@ -89,12 +68,16 @@ function editMessage(args) {
         body: { text: args.text }
     };
 
+    return getRequestPromise(options, getBeautifulMessage, args);
+}
+
+function getRequestPromise(options, args, textHandler = text => text) {
     return new Promise((resolve, reject) => {
         request(options, (error, response, body) => {
             if (error) {
                 reject(error);
             }
-            resolve(getBeautifulMessage(body, args.v));
+            resolve(textHandler(body, args.v));
         });
     });
 }
@@ -109,10 +92,10 @@ function getBeautifulMessage(message, isDetailed) {
     if (isDetailed) {
         beautifulMessage += `${chalk.hex('#ff0')('ID')}: ${message.id}\n`;
     }
-    if (message.from !== undefined) {
+    if (message.from) {
         beautifulMessage += `${chalk.hex('#f00')('FROM')}: ${message.from}\n`;
     }
-    if (message.to !== undefined) {
+    if (message.to) {
         beautifulMessage += `${chalk.hex('#f00')('TO')}: ${message.to}\n`;
     }
     if (message.edited) {

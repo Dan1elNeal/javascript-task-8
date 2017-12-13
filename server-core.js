@@ -48,10 +48,10 @@ function handlePost(req, res) {
                 text,
                 id: shortid.generate()
             };
-            if (from !== undefined) {
+            if (from) {
                 message.from = from;
             }
-            if (to !== undefined) {
+            if (to) {
                 message.to = to;
             }
 
@@ -66,8 +66,8 @@ function handleGet(req, res) {
     const { from, to } = parseQuery(query);
 
     let suitableMessages = MESSAGES.filter(message => {
-        return (from === undefined || from === message.from) &&
-            (to === undefined || to === message.to);
+        return (!from || from === message.from) &&
+            (!to || to === message.to);
     });
     res.end(JSON.stringify(suitableMessages));
 }
