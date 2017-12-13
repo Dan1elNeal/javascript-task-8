@@ -91,9 +91,4 @@ messagesRouter.patch('/messages/:id', (req, res) => {
         });
 });
 
-messagesRouter.use((req, res) => {
-    res.statusCode = 404;
-    res.end();
-});
-
 module.exports = server;
