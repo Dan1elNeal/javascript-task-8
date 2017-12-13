@@ -11,12 +11,16 @@ let MESSAGES = [];
 
 let messagesRouter = router();
 
-const server = http.createServer(function (req, res) {
+const server = http.createServer((req, res) => {
     messagesRouter(req, res, finalhandler(req, res));
 });
 
-messagesRouter.get('/messages', function (req, res) {
+messagesRouter.all('/messages', (req, res, next) => {
     res.setHeader('Content-Type', 'application/json');
+    next();
+});
+
+messagesRouter.get('/messages', (req, res) => {
     const { query } = parseUrl(req.url);
     const { from, to } = parseQuery(query);
 
@@ -27,8 +31,7 @@ messagesRouter.get('/messages', function (req, res) {
     res.end(JSON.stringify(suitableMessages));
 });
 
-messagesRouter.post('/messages', function (req, res) {
-    res.setHeader('Content-Type', 'application/json');
+messagesRouter.post('/messages', (req, res) => {
     const { query } = parseUrl(req.url);
     const { from, to } = parseQuery(query);
 
@@ -59,18 +62,14 @@ messagesRouter.post('/messages', function (req, res) {
         });
 });
 
-messagesRouter.delete('/messages/:id', function (req, res) {
-    res.setHeader('Content-Type', 'application/json');
-
+messagesRouter.delete('/messages/:id', (req, res) => {
     MESSAGES = MESSAGES.filter(message => message.id !== req.params.id);
 
     let okay = { status: 'ok' };
     res.end(JSON.stringify(okay));
 });
 
-messagesRouter.patch('/messages/:id', function (req, res) {
-    res.setHeader('Content-Type', 'application/json');
-
+messagesRouter.patch('/messages/:id', (req, res) => {
     let body = [];
 
     req
@@ -90,6 +89,11 @@ messagesRouter.patch('/messages/:id', function (req, res) {
                 }
             }
         });
+});
+
+messagesRouter.use((req, res) => {
+    res.statusCode = 404;
+    res.end();
 });
 
 module.exports = server;
