@@ -15,12 +15,9 @@ const server = http.createServer((req, res) => {
     messagesRouter(req, res, finalhandler(req, res));
 });
 
-messagesRouter.all('/messages', (req, res, next) => {
-    res.setHeader('Content-Type', 'application/json');
-    next();
-});
-
 messagesRouter.get('/messages', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+
     const { query } = parseUrl(req.url);
     const { from, to } = parseQuery(query);
 
@@ -32,6 +29,8 @@ messagesRouter.get('/messages', (req, res) => {
 });
 
 messagesRouter.post('/messages', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+
     const { query } = parseUrl(req.url);
     const { from, to } = parseQuery(query);
 
@@ -63,6 +62,8 @@ messagesRouter.post('/messages', (req, res) => {
 });
 
 messagesRouter.delete('/messages/:id', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+
     MESSAGES = MESSAGES.filter(message => message.id !== req.params.id);
 
     let okay = { status: 'ok' };
@@ -70,6 +71,8 @@ messagesRouter.delete('/messages/:id', (req, res) => {
 });
 
 messagesRouter.patch('/messages/:id', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+
     let body = [];
 
     req
@@ -89,6 +92,11 @@ messagesRouter.patch('/messages/:id', (req, res) => {
                 }
             }
         });
+});
+
+messagesRouter.use((req, res) => {
+    res.statusCode = 404;
+    res.end();
 });
 
 module.exports = server;
