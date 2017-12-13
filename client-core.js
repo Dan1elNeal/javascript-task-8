@@ -35,14 +35,7 @@ function getMessages(args) {
         qs: { from: args.from, to: args.to }
     };
 
-    return new Promise((resolve, reject) => {
-        request(options, (error, response, body) => {
-            if (error) {
-                reject(error);
-            }
-            resolve(getBeautifulMessages(body, args.v));
-        });
-    });
+    return getRequestPromise(options, args, getBeautifulMessages);
 }
 
 function postMessage(args) {
@@ -54,14 +47,7 @@ function postMessage(args) {
         qs: { from: args.from, to: args.to }
     };
 
-    return new Promise((resolve, reject) => {
-        request(options, (error, response, body) => {
-            if (error) {
-                reject(error);
-            }
-            resolve(getBeautifulMessage(body, args.v));
-        });
-    });
+    return getRequestPromise(options, args, getBeautifulMessage);
 }
 
 function deleteMessage(args) {
@@ -71,14 +57,7 @@ function deleteMessage(args) {
         json: true
     };
 
-    return new Promise((resolve, reject) => {
-        request(options, (error) => {
-            if (error) {
-                reject(error);
-            }
-            resolve('DELETED');
-        });
-    });
+    return getRequestPromise(options, args, () => 'DELETED');
 }
 
 function editMessage(args) {
@@ -89,12 +68,16 @@ function editMessage(args) {
         body: { text: args.text }
     };
 
+    return getRequestPromise(options, args, getBeautifulMessage);
+}
+
+function getRequestPromise(options, args, textHandler) {
     return new Promise((resolve, reject) => {
         request(options, (error, response, body) => {
             if (error) {
                 reject(error);
             }
-            resolve(getBeautifulMessage(body, args.v));
+            resolve(textHandler(body, args.v));
         });
     });
 }
